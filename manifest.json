@@ -1,6 +1,6 @@
 {
   "name": "Where Did My Money Go?",
-  "short_name": "MoneyFlow",
+  "short_name": "Where Did My Money Go?",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -14,4 +14,5 @@
     }
   ]
 }
+
 
