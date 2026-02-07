@@ -1,16 +1,17 @@
 {
   "name": "Where Did My Money Go?",
-  "short_name": "MoneyTracker",
+  "short_name": "MoneyFlow",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#4f46e5",
+  "background_color": "#ffffff",
   "theme_color": "#4f46e5",
   "icons": [
     {
       "src": "icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
-
 }
+
