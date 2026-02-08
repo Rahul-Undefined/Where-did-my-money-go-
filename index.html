@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Where did my money go? v25.0</title>
+    <title>Where did my money go?</title>
     
-    <link rel="manifest" href="manifest.json?v=2.5">
+    <link rel="manifest" href="manifest.json?v=2.1">
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#4f46e5">
     
@@ -32,6 +32,8 @@
         [data-theme="cyan"] { --primary-color: #06b6d4; --card-bg: #ecfeff; }
         [data-theme="amber"] { --primary-color: #f59e0b; --card-bg: #fffbeb; }
         [data-theme="slate"] { --primary-color: #64748b; --card-bg: #f8fafc; }
+        [data-theme="pink"] { --primary-color: #db2777; --card-bg: #fdf2f8; }
+        [data-theme="lime"] { --primary-color: #65a30d; --card-bg: #f7fee7; }
 
         .dark { --surface-color: #111827; --card-bg: #1f2937; }
         body { font-family: 'Outfit', sans-serif; background-color: #f3f4f6; transition: all 0.3s ease; }
@@ -44,20 +46,39 @@
         
         .pin-dot { width: 15px; height: 15px; border-radius: 50%; border: 2px solid #4f46e5; transition: all 0.2s; }
         .pin-dot.filled { background-color: #4f46e5; }
-        .calc-btn { transition: transform 0.1s; }
-        .calc-btn:active { transform: scale(0.9); }
+        .calc-btn { transition: transform 0.1s; outline: none; border: none; }
+        .calc-btn:active { transform: scale(0.95); }
+        input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.4; cursor: pointer; }
+
+        /* CHANGED: Added mesh gradient for modern card */
+        .modern-card-bg {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #312e81 100%);
+            position: relative;
+            z-index: 1;
+        }
+        .modern-card-bg::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            z-index: -1;
+        }
     </style>
 </head>
 <body class="antialiased pb-10">
 
     <div id="pinLockScreen" class="fixed inset-0 z-[200] bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-8 hidden">
-        <h2 class="text-2xl font-bold mb-8 text-primary">Enter PIN</h2>
+        <h2 class="text-2xl font-bold mb-8 text-primary">Secure Entry</h2>
         <div class="flex flex-col items-center gap-4 mb-10">
             <div id="pinDisplay" class="flex gap-4">
                 <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
             </div>
             <p id="pinTextPreview" class="text-sm font-bold text-gray-400 hidden"></p>
-            <button onclick="togglePinVisibility()" class="text-xs text-primary font-bold"><i class="fas fa-eye"></i> View PIN</button>
+            <button onclick="togglePinVisibility()" class="text-xs text-primary font-bold uppercase"><i class="fas fa-eye"></i> Show PIN</button>
         </div>
         <div class="grid grid-cols-3 gap-6">
             <button onclick="pressPin(1)" class="w-16 h-16 rounded-full border border-gray-200 dark:border-gray-700 text-xl font-bold">1</button>
@@ -75,12 +96,15 @@
         </div>
     </div>
 
-    <div id="onboardingModal" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-8 hidden text-gray-900">
-        <div class="max-w-md w-full text-center space-y-6">
-            <h1 class="text-3xl font-bold text-indigo-600">Where did my money go?</h1>
-            <input type="text" id="setupName" placeholder="Your Name" class="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 text-center outline-none">
-            <input type="number" id="setupTarget" placeholder="Monthly Savings Target (₹)" class="w-full p-4 bg-gray-50 rounded-xl border border-gray-200 text-center outline-none">
-            <button onclick="completeOnboarding()" class="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold">Let's Start 🚀</button>
+    <div id="onboardingModal" class="fixed inset-0 z-[150] bg-white dark:bg-gray-900 flex flex-col items-center justify-center p-8 hidden animate-enter">
+        <div class="max-w-md w-full text-center space-y-8">
+            <h1 class="text-4xl font-bold text-primary">Where did my money go?</h1>
+            <p class="text-gray-400 font-medium">Let's set up your profile to start tracking.</p>
+            <div class="space-y-4">
+                <input type="text" id="setupName" placeholder="What is your name?" class="w-full p-5 bg-gray-50 dark:bg-gray-800 rounded-2xl border-none outline-none text-center text-xl font-bold">
+                <input type="number" id="setupTarget" placeholder="Monthly Savings Goal (₹)" class="w-full p-5 bg-gray-50 dark:bg-gray-800 rounded-2xl border-none outline-none text-center text-xl font-bold">
+            </div>
+            <button onclick="completeOnboarding()" class="w-full py-5 bg-primary text-white rounded-2xl font-bold text-xl shadow-xl active:scale-95 transition">Let's Start 🚀</button>
         </div>
     </div>
 
@@ -89,7 +113,7 @@
             <div class="p-8 flex-1">
                 <h2 class="text-xl font-bold text-primary mb-10 text-center">Navigation</h2>
                 <nav class="space-y-4">
-                    <button onclick="switchView('dashboard')" class="w-full flex items-center gap-4 p-4 rounded-xl font-bold text-gray-500 hover:bg-primary/10 transition"><i class="fas fa-chart-line"></i> Tracker</button>
+                    <button onclick="switchView('dashboard')" class="w-full flex items-center gap-4 p-4 rounded-xl font-bold text-gray-500 hover:bg-primary/10 transition"><i class="fas fa-chart-line"></i> Dashboard</button>
                     <button onclick="switchView('converter')" class="w-full flex items-center gap-4 p-4 rounded-xl font-bold text-gray-500 hover:bg-primary/10 transition"><i class="fas fa-coins"></i> Currency Suite</button>
                     <button onclick="switchView('calculator')" class="w-full flex items-center gap-4 p-4 rounded-xl font-bold text-gray-500 hover:bg-primary/10 transition"><i class="fas fa-calculator"></i> Pro Calculator</button>
                 </nav>
@@ -105,27 +129,53 @@
                     <button onclick="toggleNav()"><i class="fas fa-bars text-gray-500 text-xl"></i></button>
                     <h1 class="text-xl font-bold text-center flex-1">
                         <span id="timeGreeting" class="text-gray-400 font-medium text-xs block">Welcome back,</span>
-                        <span id="userNameDisplay" class="text-primary">Rahul</span>
+                        <span id="userNameDisplay" class="text-primary">User</span>
                     </h1>
                     <button onclick="toggleSettings()"><i class="fas fa-cog text-gray-500 text-xl"></i></button>
                 </div>
             </header>
 
             <div id="dashboardView" class="animate-enter p-6 space-y-6">
-                <div class="bg-primary text-white p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                
+                <div class="modern-card-bg text-white p-6 rounded-[32px] shadow-2xl overflow-hidden flex flex-col justify-between h-56 relative">
                     <div class="flex justify-between items-start">
-                        <div><p class="text-xs font-medium opacity-80">Running Balance</p><h2 class="text-4xl font-bold mt-1" id="mainBalance">₹0.00</h2></div>
-                        <div class="text-right"><p class="text-[10px] opacity-70 font-bold uppercase">Pay Day In</p><p class="font-bold text-lg" id="countdownInCard">-- Days</p></div>
+                        <div class="w-10 h-7 rounded-lg bg-yellow-400/80 backdrop-blur-sm border border-yellow-200/50 flex items-center justify-center">
+                            <div class="w-6 h-4 border border-yellow-600/30 rounded-md grid grid-cols-2 gap-0.5 p-0.5">
+                                <div class="bg-yellow-600/20 rounded-[1px]"></div><div class="bg-yellow-600/20 rounded-[1px]"></div>
+                                <div class="bg-yellow-600/20 rounded-[1px]"></div><div class="bg-yellow-600/20 rounded-[1px]"></div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div id="healthBadge" class="inline-block bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border border-white/10">Status</div>
+                        </div>
                     </div>
-                    <div class="mt-6 grid grid-cols-3 border-t border-white/20 pt-4 items-center">
-                        <div class="text-left"><p class="text-[9px] opacity-70 font-bold uppercase leading-tight">Goal</p><div class="flex items-center gap-1"><p class="font-bold text-xs" id="targetDisplay">₹0</p><button onclick="editGoal()" class="text-white/50 hover:text-white transition"><i class="fas fa-pen text-[9px]"></i></button></div></div>
-                        <div class="text-center"><p class="text-[9px] opacity-70 font-bold uppercase leading-tight">Expenses</p><p class="font-bold text-xs" id="sumOfExpensesBalance">₹0</p></div>
-                        <div class="text-right"><div id="healthBadge" class="inline-block bg-white/20 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-wider">Status</div></div>
+
+                    <div class="mt-2">
+                        <p class="text-[11px] font-medium text-indigo-100 uppercase tracking-widest mb-1">Total Balance</p>
+                        <h2 class="text-4xl font-bold tracking-tight" id="mainBalance">₹0.00</h2>
+                    </div>
+
+                    <div class="mt-auto grid grid-cols-3 gap-2 bg-black/20 backdrop-blur-md p-3 rounded-2xl border border-white/5">
+                        <div class="text-center border-r border-white/10">
+                            <p class="text-[8px] text-indigo-100 font-bold uppercase">Pay Day</p>
+                            <p class="font-bold text-sm" id="countdownInCard">-- Days</p>
+                        </div>
+                        <div class="text-center border-r border-white/10">
+                            <p class="text-[8px] text-indigo-100 font-bold uppercase">Target</p>
+                            <div class="flex items-center justify-center gap-1">
+                                <p class="font-bold text-sm" id="targetDisplay">₹0</p>
+                                <button onclick="editGoal()" class="text-white/70 hover:text-white"><i class="fas fa-pen text-[8px]"></i></button>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-[8px] text-indigo-100 font-bold uppercase">Expense</p>
+                            <p class="font-bold text-sm" id="sumOfExpensesBalance">₹0</p>
+                        </div>
                     </div>
                 </div>
 
                 <div id="dailyBudgetCard" class="custom-card p-5 rounded-3xl border-l-8">
-                    <div class="flex justify-between items-center mb-4"><p class="text-[10px] text-gray-400 font-bold uppercase">Daily Spending Tracker</p>
+                    <div class="flex justify-between items-center mb-4"><p class="text-[10px] text-gray-400 font-bold uppercase">Spending Health</p>
                         <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">
                             <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Limit:</span>
                             <input type="number" id="dailyLimitInput" onchange="updateDailyLimit(this.value)" class="bg-transparent font-bold text-xs w-16 outline-none text-primary dark:text-white" placeholder="Set">
@@ -139,21 +189,21 @@
                     <div class="mt-4 h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden"><div id="utilizationBar" class="h-full bg-primary transition-all duration-500" style="width: 0%"></div></div>
                 </div>
 
-                <button onclick="openAddModal()" class="w-full custom-card rounded-2xl p-6 flex items-center justify-center gap-3 font-bold text-gray-500 hover:border-primary transition"><i class="fas fa-plus-circle text-primary text-xl"></i> Add Transaction</button>
+                <button onclick="openAddModal()" class="w-full custom-card rounded-2xl p-6 flex items-center justify-center gap-3 font-bold text-gray-500 hover:border-primary transition active:scale-95"><i class="fas fa-plus-circle text-primary text-xl"></i> Add Transaction</button>
 
                 <div class="custom-card p-4 rounded-2xl">
                     <div class="flex justify-between items-center mb-4"><p class="text-[10px] font-bold text-gray-400 uppercase">Analytics</p>
                     <div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-                        <button onclick="setChartFilter('daily')" class="px-2 py-1 rounded-md text-[9px] font-bold chart-btn active-chart bg-primary text-white">DAILY</button>
-                        <button onclick="setChartFilter('weekly')" class="px-2 py-1 rounded-md text-[9px] font-bold chart-btn">WEEKLY</button>
-                        <button onclick="setChartFilter('monthly')" class="px-2 py-1 rounded-md text-[9px] font-bold chart-btn">MONTHLY</button>
+                        <button onclick="setChartFilter('daily')" class="px-3 py-1 rounded-md text-[9px] font-bold chart-btn active-chart bg-primary text-white">DAILY</button>
+                        <button onclick="setChartFilter('weekly')" class="px-3 py-1 rounded-md text-[9px] font-bold chart-btn">WEEKLY</button>
+                        <button onclick="setChartFilter('monthly')" class="px-3 py-1 rounded-md text-[9px] font-bold chart-btn">MONTHLY</button>
                     </div></div>
                     <div class="h-48"><canvas id="mainChart"></canvas></div>
                 </div>
 
                 <div class="custom-card p-4 rounded-2xl"><p class="text-[10px] font-bold text-gray-400 uppercase mb-4">Category Breakdown</p><div class="h-64 flex justify-center"><canvas id="pieChart"></canvas></div></div>
 
-                <div><h3 class="font-bold text-lg mb-4 flex justify-between items-center">History<span id="historyCount" class="text-[10px] text-gray-400 font-bold"></span></h3>
+                <div><h3 class="font-bold text-lg mb-4 flex justify-between items-center">Recent History<span id="historyCount" class="text-[10px] text-gray-400 font-bold"></span></h3>
                     <div class="relative mb-4"><input type="text" id="txnSearch" oninput="renderUI()" placeholder="Search transactions..." class="w-full p-4 pl-10 custom-card rounded-2xl outline-none focus:border-primary transition text-sm text-gray-900 dark:text-white"><i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i></div>
                     <div id="transactionList" class="space-y-3"></div>
                 </div>
@@ -162,42 +212,45 @@
             <div id="converterView" class="view-hidden p-6 animate-enter space-y-6">
                 <h2 class="text-2xl font-bold">Currency Suite</h2>
                 <div class="custom-card p-6 rounded-[32px] space-y-6 shadow-sm">
-                    <div><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Source Amount</p><input type="number" id="convAmount" value="1" oninput="convertCurrency()" class="w-full p-5 bg-gray-50 dark:bg-gray-900 rounded-2xl text-3xl font-bold outline-none text-gray-900 dark:text-white"></div>
+                    <div><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Convert Amount</p><input type="number" id="convAmount" value="1" oninput="convertCurrency()" class="w-full p-5 bg-gray-50 dark:bg-gray-900 rounded-2xl text-3xl font-bold outline-none text-gray-900 dark:text-white border-none"></div>
                     <div class="flex gap-4 items-center">
-                        <select id="convFrom" onchange="convertCurrency()" class="flex-1 bg-gray-100 dark:bg-gray-700 p-4 rounded-2xl font-bold text-sm outline-none"><option value="USD">USD</option><option value="INR" selected>INR</option><option value="EUR">EUR</option><option value="GBP">GBP</option><option value="JPY">JPY</option><option value="AED">AED</option></select>
-                        <button onclick="swapConverter()" class="h-12 w-12 bg-primary text-white rounded-xl flex items-center justify-center transition active:scale-90"><i class="fas fa-exchange-alt"></i></button>
-                        <select id="convTo" onchange="convertCurrency()" class="flex-1 bg-gray-100 dark:bg-gray-700 p-4 rounded-2xl font-bold text-sm outline-none"><option value="USD" selected>USD</option><option value="INR">INR</option><option value="EUR">EUR</option><option value="GBP">GBP</option></select>
+                        <select id="convFrom" onchange="convertCurrency()" class="flex-1 bg-gray-100 dark:bg-gray-700 p-4 rounded-2xl font-bold text-sm outline-none border-none"><option value="USD">USD</option><option value="INR" selected>INR</option><option value="EUR">EUR</option><option value="GBP">GBP</option><option value="AED">AED</option></select>
+                        <button onclick="swapConverter()" class="h-12 w-12 bg-primary text-white rounded-xl flex items-center justify-center transition active:scale-90 shadow-lg"><i class="fas fa-sync"></i></button>
+                        <select id="convTo" onchange="convertCurrency()" class="flex-1 bg-gray-100 dark:bg-gray-700 p-4 rounded-2xl font-bold text-sm outline-none border-none"><option value="USD" selected>USD</option><option value="INR">INR</option><option value="EUR">EUR</option></select>
                     </div>
-                    <div class="text-center py-8 border-t border-gray-100 dark:border-gray-800"><h4 id="convResult" class="text-5xl font-bold text-primary tracking-tighter mb-2">--</h4><p id="liveRateText" class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Loading rates...</p></div>
+                    <div class="text-center py-8 border-t border-gray-100 dark:border-gray-800"><h4 id="convResult" class="text-5xl font-bold text-primary tracking-tighter mb-2">--</h4><p id="liveRateText" class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Market rates loading...</p></div>
                 </div>
             </div>
 
             <div id="calculatorView" class="view-hidden p-6 animate-enter space-y-6">
                 <div class="flex justify-between items-center"><h2 class="text-2xl font-bold">Pro Calculator</h2>
-                    <div class="flex bg-gray-200 dark:bg-gray-800 p-1.5 rounded-xl">
-                        <button onclick="setCalcMode('basic')" class="px-4 py-2 rounded-lg text-xs font-bold calc-mode-btn bg-primary text-white">BASIC</button>
-                        <button onclick="setCalcMode('sci')" class="px-4 py-2 rounded-lg text-xs font-bold calc-mode-btn">SCI</button>
-                        <button onclick="setCalcMode('fin')" class="px-4 py-2 rounded-lg text-xs font-bold calc-mode-btn">FINANCE</button>
+                    <div class="flex bg-gray-200 dark:bg-gray-800 p-1.5 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <button onclick="setCalcMode('basic')" class="px-5 py-2.5 rounded-lg text-xs font-bold calc-mode-btn bg-primary text-white transition">BASIC</button>
+                        <button onclick="setCalcMode('sci')" class="px-5 py-2.5 rounded-lg text-xs font-bold calc-mode-btn transition text-gray-400">SCI</button>
+                        <button onclick="setCalcMode('fin')" class="px-5 py-2.5 rounded-lg text-xs font-bold calc-mode-btn transition text-gray-400">FIN</button>
                     </div>
                 </div>
                 <div id="mathCalc" class="space-y-4">
-                    <div class="custom-card p-6 rounded-[32px] text-right"><p id="calcExpression" class="text-xs text-gray-400 font-bold h-4 mb-1">0</p><h4 id="calcDisplay" class="text-4xl font-bold text-primary">0</h4></div>
-                    <div class="grid grid-cols-4 gap-3" id="calcGrid"></div>
+                    <div class="custom-card p-6 rounded-[32px] text-right shadow-sm border-2 border-primary/10">
+                        <p id="calcExpression" class="text-lg text-gray-400 font-bold h-6 mb-1">0</p>
+                        <h4 id="calcDisplay" class="text-4xl font-bold text-primary truncate">0</h4>
+                    </div>
+                    <div class="grid grid-cols-4 gap-4" id="calcGrid"></div>
                 </div>
                 <div id="finCalc" class="view-hidden space-y-4">
                     <div class="custom-card p-6 rounded-[32px] space-y-6">
                         <div class="flex bg-gray-100 dark:bg-gray-900 p-1.5 rounded-2xl">
-                            <button onclick="setFinType('emi')" id="emiTab" class="flex-1 py-3 font-bold rounded-xl bg-primary text-white">LOAN EMI</button>
-                            <button onclick="setFinType('sip')" id="sipTab" class="flex-1 py-3 font-bold rounded-xl text-gray-400">SIP RESULT</button>
+                            <button onclick="setFinType('emi')" id="emiTab" class="flex-1 py-3 font-bold rounded-xl bg-primary text-white shadow-sm transition">LOAN EMI</button>
+                            <button onclick="setFinType('sip')" id="sipTab" class="flex-1 py-3 font-bold rounded-xl text-gray-400 transition">SIP RESULT</button>
                         </div>
                         <div class="space-y-4">
-                            <div><p class="text-[10px] font-bold text-gray-400 uppercase">Amount (₹)</p><input type="number" id="finAmt" value="500000" class="w-full bg-transparent text-2xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 py-2"></div>
-                            <div><p class="text-[10px] font-bold text-gray-400 uppercase">Interest (%)</p><input type="number" id="finRate" value="8.5" class="w-full bg-transparent text-2xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 py-2"></div>
-                            <div><p class="text-[10px] font-bold text-gray-400 uppercase">Tenure (Years)</p><input type="number" id="finTenure" value="5" class="w-full bg-transparent text-2xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 py-2"></div>
+                            <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Amount (₹)</p><input type="number" id="finAmt" value="500000" class="w-full bg-transparent text-2xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 py-3"></div>
+                            <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Interest (%)</p><input type="number" id="finRate" value="8.5" class="w-full bg-transparent text-2xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 py-3"></div>
+                            <div><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tenure (Years)</p><input type="number" id="finTenure" value="5" class="w-full bg-transparent text-2xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 py-3"></div>
                         </div>
-                        <button onclick="calculateFinance()" class="w-full py-5 bg-primary text-white rounded-[24px] font-bold">Calculate Result</button>
+                        <button onclick="calculateFinance()" class="w-full py-5 bg-primary text-white rounded-[24px] font-bold shadow-lg active:scale-95 transition">Calculate Result</button>
                     </div>
-                    <div class="custom-card p-8 rounded-[32px] text-center"><p class="text-[10px] font-bold text-gray-400 uppercase mb-2" id="finResultLabel">Monthly EMI</p><h4 id="finResultValue" class="text-4xl font-bold text-primary">₹0</h4></div>
+                    <div class="custom-card p-8 rounded-[32px] text-center border-t-8 border-primary"><p class="text-[10px] font-bold text-gray-400 uppercase mb-2" id="finResultLabel">Monthly EMI</p><h4 id="finResultValue" class="text-4xl font-bold text-primary">₹0</h4></div>
                 </div>
             </div>
         </div>
@@ -205,41 +258,55 @@
 
     <div id="settingsModal" class="fixed inset-0 z-50 bg-black/60 hidden flex justify-end" onclick="if(event.target === this) toggleSettings()">
         <div class="bg-white dark:bg-gray-900 w-80 h-full p-8 shadow-2xl overflow-y-auto text-gray-900 dark:text-white">
-            <h2 class="text-2xl font-bold mb-10">Settings</h2>
-            <div class="space-y-8">
-                <div class="p-5 bg-gray-50 dark:bg-gray-800 rounded-3xl space-y-4">
+            <h2 class="text-3xl font-bold mb-10">Settings</h2>
+            <div class="space-y-10">
+                <div class="p-5 bg-gray-50 dark:bg-gray-800 rounded-3xl space-y-4 shadow-inner">
                     <div class="text-primary font-bold text-[10px] uppercase tracking-widest"><i class="fas fa-lock"></i> Security Vault</div>
-                    <button onclick="document.getElementById('pinBox').classList.toggle('hidden')" class="w-full py-3 bg-white dark:bg-gray-700 rounded-xl text-[10px] font-bold uppercase border">Update Access PIN</button>
-                    <div id="pinBox" class="hidden space-y-2">
-                        <input type="password" id="setPinInput" maxlength="4" placeholder="Enter PIN" class="w-full p-4 bg-white dark:bg-gray-700 rounded-xl font-bold text-center">
+                    <button onclick="document.getElementById('pinBox').classList.toggle('hidden')" class="w-full py-3 bg-white dark:bg-gray-700 rounded-xl text-[10px] font-bold border">Update Access PIN</button>
+                    <div id="pinBox" class="hidden space-y-2 animate-enter">
+                        <input type="password" id="setPinInput" maxlength="4" placeholder="Enter New 4-Digit PIN" class="w-full p-4 bg-white dark:bg-gray-700 rounded-xl text-center border font-bold">
                         <button onclick="savePin(document.getElementById('setPinInput').value)" class="w-full py-3 bg-primary text-white rounded-xl text-[10px] font-bold uppercase">Save PIN</button>
                     </div>
                 </div>
-                <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-4">Themes</label><div class="grid grid-cols-4 gap-3">
-                    <button onclick="setTheme('default')" class="h-8 rounded-full bg-indigo-600"></button><button onclick="setTheme('purple')" class="h-8 rounded-full bg-violet-600"></button><button onclick="setTheme('emerald')" class="h-8 rounded-full bg-emerald-600"></button><button onclick="setTheme('orange')" class="h-8 rounded-full bg-orange-600"></button>
+                <div><label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-5">Theme Palette</label><div class="grid grid-cols-5 gap-3">
+                    <button onclick="setTheme('default')" class="h-8 rounded-full bg-indigo-600"></button>
+                    <button onclick="setTheme('purple')" class="h-8 rounded-full bg-violet-600"></button>
+                    <button onclick="setTheme('emerald')" class="h-8 rounded-full bg-emerald-600"></button>
+                    <button onclick="setTheme('orange')" class="h-8 rounded-full bg-orange-600"></button>
+                    <button onclick="setTheme('rose')" class="h-8 rounded-full bg-rose-600"></button>
+                    <button onclick="setTheme('cyan')" class="h-8 rounded-full bg-cyan-600"></button>
+                    <button onclick="setTheme('amber')" class="h-8 rounded-full bg-amber-600"></button>
+                    <button onclick="setTheme('slate')" class="h-8 rounded-full bg-slate-600"></button>
+                    <button onclick="setTheme('pink')" class="h-8 rounded-full bg-pink-600"></button>
+                    <button onclick="setTheme('lime')" class="h-8 rounded-full bg-lime-600"></button>
                 </div></div>
-                <button onclick="toggleDarkMode()" id="themeToggleBtn" class="w-full py-4 bg-gray-100 dark:bg-gray-800 rounded-xl font-bold text-[10px] uppercase tracking-widest transition">Toggle Mode</button>
-                <div class="pt-6 border-t border-gray-100 dark:border-gray-800 space-y-4">
-                    <div><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Monthly Pay Day (1-31)</p><input type="number" id="salaryDateInput" onchange="saveSalaryDate(this.value)" class="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-xl font-bold outline-none"></div>
-                    <button onclick="document.getElementById('importFile').click()" class="w-full py-4 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 font-bold text-[10px] uppercase tracking-widest">Import CSV</button><input type="file" id="importFile" class="hidden" accept=".csv" onchange="handleImport(this)">
-                    <button onclick="exportToCSV()" class="w-full py-4 text-green-600 font-bold text-[10px] uppercase tracking-widest">Export CSV</button>
-                    <button onclick="resetTransactions()" class="w-full py-4 text-red-500 font-bold text-[10px] uppercase tracking-widest">Reset All</button>
+                <button onclick="toggleDarkMode()" id="themeToggleBtn" class="w-full py-4 bg-gray-100 dark:bg-gray-800 rounded-xl font-bold text-[10px] uppercase tracking-widest transition">Dark Mode</button>
+                <div class="pt-8 border-t dark:border-gray-800 space-y-5">
+                    <div><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Monthly Pay Day (1-31)</p><input type="number" id="salaryDateInput" onchange="saveSalaryDate(this.value)" class="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-xl font-bold border-none outline-none text-xl shadow-inner"></div>
+                    <button onclick="document.getElementById('importFile').click()" class="w-full py-4 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 font-bold text-[10px] uppercase">Import CSV Data</button><input type="file" id="importFile" class="hidden" accept=".csv" onchange="handleImport(this)">
+                    <button onclick="exportToCSV()" class="w-full py-4 text-green-600 font-bold text-[10px] uppercase">Export in Excel</button>
+                    <button onclick="resetTransactions()" class="w-full py-4 text-red-500 font-bold text-[10px] uppercase">Wipe All Local Data</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="addModal" class="fixed inset-0 z-[120] bg-black/60 hidden flex items-center justify-center p-4 backdrop-blur-sm" onclick="if(event.target === this) closeAddModal()">
+    <div id="addModal" class="fixed inset-0 z-[120] bg-black/60 hidden flex items-center justify-center p-4 backdrop-blur-md" onclick="if(event.target === this) closeAddModal()">
         <div class="bg-white dark:bg-gray-800 w-full max-w-md p-8 rounded-[40px] shadow-2xl animate-enter">
-            <h3 id="modalTitle" class="text-2xl font-bold mb-8">New Entry</h3>
+            <h3 id="modalTitle" class="text-3xl font-bold mb-8">New Entry</h3>
             <form onsubmit="handleAdd(event)" class="space-y-6">
-                <input type="hidden" id="editId"><div class="grid grid-cols-2 gap-3"><label class="cursor-pointer"><input type="radio" name="type" value="expense" checked class="peer hidden" onchange="updateModalColors(); updateCategories()"><div class="py-4 text-center rounded-2xl border-2 border-gray-100 dark:border-gray-700 peer-checked:border-red-500 peer-checked:text-red-500 font-bold transition">Expense</div></label>
-                <label class="cursor-pointer"><input type="radio" name="type" value="income" class="peer hidden" onchange="updateModalColors(); updateCategories()"><div class="py-4 text-center rounded-2xl border-2 border-gray-100 dark:border-gray-700 peer-checked:border-green-500 peer-checked:text-green-500 font-bold transition">Income</div></label></div>
+                <input type="hidden" id="editId"><div class="grid grid-cols-2 gap-4"><label class="cursor-pointer"><input type="radio" name="type" value="expense" checked class="peer hidden" onchange="updateModalColors(); updateCategories()"><div class="py-4 text-center rounded-2xl border-2 dark:border-gray-700 peer-checked:border-red-500 peer-checked:text-red-500 font-bold transition">Expense</div></label>
+                <label class="cursor-pointer"><input type="radio" name="type" value="income" class="peer hidden" onchange="updateModalColors(); updateCategories()"><div class="py-4 text-center rounded-2xl border-2 dark:border-gray-700 peer-checked:border-green-500 peer-checked:text-green-500 font-bold transition">Income</div></label></div>
                 <input type="number" id="amt" placeholder="₹0" class="w-full text-5xl font-bold text-center bg-transparent outline-none transition" required>
-                <div class="grid grid-cols-12 gap-2 items-center"><select id="cat" class="col-span-10 p-4 bg-gray-50 dark:bg-gray-700 rounded-2xl font-bold outline-none text-gray-900 dark:text-white border dark:border-gray-600"></select><button type="button" onclick="addNewCategory()" class="col-span-2 p-4 bg-primary/10 text-primary rounded-2xl"><i class="fas fa-plus"></i></button></div>
-                <input type="date" id="entryDate" class="w-full p-4 bg-gray-50 dark:bg-gray-700 rounded-2xl font-bold outline-none text-gray-900 dark:text-white border dark:border-gray-600">
-                <input type="text" id="desc" placeholder="Note (Optional)" class="w-full p-4 bg-gray-50 dark:bg-gray-700 rounded-2xl outline-none text-gray-900 dark:text-white border dark:border-gray-600">
-                <button type="submit" id="addRecordBtn" class="w-full py-5 bg-primary text-white rounded-3xl font-bold text-xl shadow-xl transition">Add Record</button>
+                <div class="grid grid-cols-12 gap-3 items-center"><select id="cat" class="col-span-10 p-5 bg-gray-50 dark:bg-gray-700 rounded-2xl font-bold outline-none text-gray-900 dark:text-white border-none shadow-inner"></select><button type="button" onclick="addNewCategory()" class="col-span-2 h-full bg-primary/10 text-primary rounded-2xl flex items-center justify-center"><i class="fas fa-plus"></i></button></div>
+                
+                <div class="relative group">
+                    <p class="absolute -top-2 left-4 px-2 bg-white dark:bg-gray-800 text-[9px] font-bold text-gray-400 uppercase z-10">Entry Date</p>
+                    <input type="date" id="entryDate" class="w-full p-5 bg-gray-50 dark:bg-gray-700 rounded-2xl font-bold outline-none text-gray-900 dark:text-white border-2 border-transparent group-focus-within:border-primary/20 transition">
+                </div>
+                
+                <input type="text" id="desc" placeholder="What was this for?" class="w-full p-5 bg-gray-50 dark:bg-gray-700 rounded-2xl outline-none text-gray-900 dark:text-white border-none shadow-inner">
+                <button type="submit" id="addRecordBtn" class="w-full py-5 bg-primary text-white rounded-3xl font-bold text-xl shadow-xl active:scale-95 transition">Record Now</button>
             </form>
         </div>
     </div>
@@ -263,11 +330,14 @@
 
         // --- DASHBOARD CORE ---
         function updateDailyLimit(v) { DB.dailyLimit = parseFloat(v) || 0; localStorage.setItem('rt_daily_limit', v); renderUI(); }
-        function editGoal() { const n = prompt("Target (₹):", DB.user.target); if (n !== null && !isNaN(n)) { DB.user.target = n; localStorage.setItem('rt_user', JSON.stringify(DB.user)); renderUI(); } }
+        function editGoal() { const n = prompt("Target Goal (₹):", DB.user.target); if (n !== null && !isNaN(n)) { DB.user.target = n; localStorage.setItem('rt_user', JSON.stringify(DB.user)); renderUI(); } }
         function getDaysLeft() { 
             const now = new Date(), d = now.getDate(), m = now.getMonth(), y = now.getFullYear();
             const last = new Date(y, m + 1, 0).getDate();
-            if (DB.salaryDate > 0) return d < DB.salaryDate ? DB.salaryDate - d : (last - d) + DB.salaryDate;
+            if (DB.salaryDate > 0) {
+                if (d < DB.salaryDate) return DB.salaryDate - d;
+                return (last - d) + DB.salaryDate;
+            }
             return last - d;
         }
         function renderUI() {
@@ -284,19 +354,28 @@
             const utilP = DB.dailyLimit > 0 ? (spentToday / DB.dailyLimit) * 100 : 0;
             document.getElementById('utilizationBar').style.width = `${Math.min(100, utilP)}%`;
             document.getElementById('dailyBudgetCard').className = "custom-card p-5 rounded-3xl border-l-8 " + (utilP > 75 ? 'border-red-500' : (utilP >= 50 ? 'border-yellow-500' : 'border-green-500'));
+            
             const dLeft = getDaysLeft(), target = parseInt(DB.user.target), surplus = total - target;
             document.getElementById('countdownInCard').innerText = `${dLeft} Days`;
             document.getElementById('targetDisplay').innerText = `₹${target}`;
-            document.getElementById('safeSpendAmount').innerText = `₹${Math.max(0, Math.floor(surplus / (dLeft || 1))).toLocaleString('en-IN')}`;
-            const hB = document.getElementById('healthBadge'); hB.innerText = surplus < 0 ? "BEHIND" : "HEALTHY"; hB.className = `inline-block ${surplus < 0 ? 'bg-red-500' : 'bg-green-500'} text-white px-2 py-1 rounded-full text-[8px] font-bold uppercase tracking-wider`;
+            
+            // CHANGED: LOGIC CHECK - SAFE SPEND
+            // Logic: Total Money Available - Savings Goal = Spendable Money.
+            // Spendable Money / Days Remaining = Daily Safe Spend.
+            // This ensures you hit your savings goal by payday.
+            const daysDivisor = dLeft || 1; // Prevent division by zero if it's the last day
+            const safeDaily = Math.max(0, Math.floor(surplus / daysDivisor));
+            document.getElementById('safeSpendAmount').innerText = `₹${safeDaily.toLocaleString('en-IN')}`;
+            
+            const hB = document.getElementById('healthBadge'); hB.innerText = surplus < 0 ? "BEHIND" : "HEALTHY"; hB.className = `inline-block backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border border-white/10 ${surplus < 0 ? 'bg-red-500/80 text-white' : 'bg-green-500/80 text-white'}`;
             const q = document.getElementById('txnSearch').value.toLowerCase();
             const filt = DB.txns.filter(t => (t.desc||'').toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || t.date.includes(q));
             const list = document.getElementById('transactionList'); list.innerHTML = filt.length ? '' : '<p class="text-center opacity-40 py-10">No records found</p>';
-            filt.slice(0, 20).forEach(t => { const isE = t.amount < 0; list.innerHTML += `<div class="custom-card p-4 rounded-2xl flex justify-between items-center"><div class="flex items-center gap-4"><span class="text-2xl">${t.category.split(' ')[0]}</span><div><h4 class="font-bold text-gray-800 dark:text-gray-100 text-sm">${t.desc || t.category}</h4><p class="text-[10px] text-gray-400 font-bold">${t.date}</p></div></div><div class="flex items-center gap-4"><span class="font-bold ${isE ? 'text-red-500' : 'text-green-500'} text-sm">${isE ? '-' : '+'}₹${Math.abs(t.amount).toLocaleString('en-IN')}</span><div class="flex gap-2"><button onclick="editTransaction(${t.id})" class="text-gray-300 hover:text-primary"><i class="fas fa-edit text-xs"></i></button><button onclick="deleteTransaction(${t.id})" class="text-gray-300 hover:text-red-500"><i class="fas fa-trash text-xs"></i></button></div></div></div>`; });
+            filt.slice(0, 20).forEach(t => { const isE = t.amount < 0; list.innerHTML += `<div class="custom-card p-4 rounded-2xl flex justify-between items-center animate-enter"><div class="flex items-center gap-4"><span class="text-2xl">${t.category.split(' ')[0]}</span><div><h4 class="font-bold text-gray-800 dark:text-gray-100 text-sm">${t.desc || t.category}</h4><p class="text-[10px] text-gray-400 font-bold">${t.date}</p></div></div><div class="flex items-center gap-4"><span class="font-bold ${isE ? 'text-red-500' : 'text-green-500'} text-sm">${isE ? '-' : '+'}₹${Math.abs(t.amount).toLocaleString('en-IN')}</span><div class="flex gap-2"><button onclick="editTransaction(${t.id})" class="text-gray-300 hover:text-primary"><i class="fas fa-edit text-xs"></i></button><button onclick="deleteTransaction(${t.id})" class="text-gray-300 hover:text-red-500"><i class="fas fa-trash text-xs"></i></button></div></div></div>`; });
             updateChart(currentChartMode); updatePieChart();
         }
 
-        // --- CALC LOGIC ---
+        // --- CALCULATOR (LIVE PREVIEW FIXED) ---
         function setCalcMode(m) { 
             calcMode = m; document.querySelectorAll('.calc-mode-btn').forEach(b => b.classList.remove('bg-primary', 'text-white')); event.target.classList.add('bg-primary', 'text-white');
             document.getElementById('mathCalc').classList.toggle('view-hidden', m === 'fin'); document.getElementById('finCalc').classList.toggle('view-hidden', m !== 'fin'); buildCalc();
@@ -305,18 +384,28 @@
             const g = document.getElementById('calcGrid'); g.innerHTML = "";
             let ks = ['C', '()', '%', '/', '7', '8', '9', '*', '4', '5', '6', '-', '1', '2', '3', '+', '0', '.', 'DEL', '='];
             if(calcMode === 'sci') ks = ['sin', 'cos', 'tan', 'C', 'log', '√', '^', '/', '7', '8', '9', '*', '4', '5', '6', '-', '1', '2', '3', '+', '0', '.', 'π', '='];
-            ks.forEach(k => { const b = document.createElement('button'); b.innerText = k; b.className = `calc-btn p-5 rounded-2xl font-bold ${['=', '+', '-', '*', '/'].includes(k) ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'}`; b.onclick = () => handleCalcInput(k); g.appendChild(b); });
+            ks.forEach(k => { const b = document.createElement('button'); b.innerText = k; b.className = `calc-btn p-5 rounded-2xl font-bold ${['=', '+', '-', '*', '/'].includes(k) ? 'bg-primary text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800'}`; b.onclick = () => handleCalcInput(k); g.appendChild(b); });
         }
         function handleCalcInput(k) {
             const d = document.getElementById('calcDisplay'), x = document.getElementById('calcExpression');
-            if(k === 'C') { calcVal = "0"; calcExpr = ""; } else if(k === 'DEL') { calcVal = calcVal.slice(0, -1) || "0"; } else if(k === '=') { try { calcVal = eval(calcExpr.replace('π', Math.PI).replace('^', '**').replace('√', 'Math.sqrt')).toString(); calcExpr = calcVal; } catch { calcVal = "Error"; } }
-            else { if(calcVal === "0") calcVal = ""; if(['sin','cos','tan','log'].includes(k)) calcExpr += `Math.${k}(`; else calcExpr += k; calcVal += k; } d.innerText = calcVal; x.innerText = calcExpr;
+            if(k === 'C') { calcVal = "0"; calcExpr = ""; } 
+            else if(k === 'DEL') { calcExpr = calcExpr.slice(0, -1) || ""; } 
+            else if(k === '=') { try { calcExpr = eval(calcExpr.replace('π', Math.PI).replace('^', '**').replace('√', 'Math.sqrt')).toString(); } catch { calcExpr = "Error"; } }
+            else { 
+                if(['sin','cos','tan','log'].includes(k)) calcExpr += `Math.${k}(`; else calcExpr += k; 
+            }
+            x.innerText = calcExpr || "0";
+            // LIVE PREVIEW LOGIC
+            try { 
+                const preview = eval(calcExpr.replace('π', Math.PI).replace('^', '**').replace('√', 'Math.sqrt'));
+                d.innerText = isNaN(preview) ? "0" : preview;
+            } catch { d.innerText = "..."; }
         }
         function setFinType(t) { 
             finType = t; 
-            document.getElementById('emiTab').className = `flex-1 py-3 font-bold rounded-xl ${t==='emi' ? 'bg-primary text-white' : 'text-gray-400'}`;
-            document.getElementById('sipTab').className = `flex-1 py-3 font-bold rounded-xl ${t==='sip' ? 'bg-primary text-white' : 'text-gray-400'}`;
-            document.getElementById('finResultLabel').innerText = t === 'emi' ? "Monthly EMI" : "Future Value"; calculateFinance();
+            document.getElementById('emiTab').className = `flex-1 py-3 font-bold rounded-xl transition shadow-sm ${t==='emi' ? 'bg-primary text-white' : 'text-gray-400'}`;
+            document.getElementById('sipTab').className = `flex-1 py-3 font-bold rounded-xl transition shadow-sm ${t==='sip' ? 'bg-primary text-white' : 'text-gray-400'}`;
+            document.getElementById('finResultLabel').innerText = t === 'emi' ? "Monthly EMI" : "Future Maturity Value"; calculateFinance();
         }
         function calculateFinance() {
             const p = parseFloat(document.getElementById('finAmt').value), r = parseFloat(document.getElementById('finRate').value)/12/100, n = parseFloat(document.getElementById('finTenure').value)*12;
@@ -324,45 +413,58 @@
             document.getElementById('finResultValue').innerText = isNaN(res) ? "₹0" : `₹${Math.round(res).toLocaleString('en-IN')}`;
         }
 
-        // --- NAVIGATION ---
-        function switchView(v) {
-            const views = ['dashboardView', 'converterView', 'calculatorView'];
-            views.forEach(id => document.getElementById(id).classList.add('view-hidden'));
-            document.getElementById(v + 'View').classList.remove('view-hidden');
-            toggleNav(); if(v === 'dashboard') renderUI();
-        }
+        // --- NAVIGATION & SYSTEM ---
+        function switchView(v) { ['dashboardView', 'converterView', 'calculatorView'].forEach(id => document.getElementById(id).classList.add('view-hidden')); document.getElementById(v + 'View').classList.remove('view-hidden'); toggleNav(); if(v === 'dashboard') renderUI(); }
         function toggleNav() { document.getElementById('navSidebar').classList.toggle('-translate-x-full'); document.getElementById('navOverlay').classList.toggle('hidden'); }
         function toggleSettings() { document.getElementById('settingsModal').classList.toggle('hidden'); }
-
-        // --- SYSTEM ---
-        function applyUIPreferences() { document.documentElement.setAttribute('data-theme', DB.theme); if (DB.isDark) document.documentElement.classList.add('dark'); }
+        function toggleDarkMode() { DB.isDark = !DB.isDark; localStorage.setItem('rt_dark', DB.isDark); document.documentElement.classList.toggle('dark'); updateDarkModeButton(); renderUI(); }
+        function updateDarkModeButton() { document.getElementById('themeToggleBtn').innerText = DB.isDark ? "Light Mode" : "Dark Mode"; }
+        function applyUIPreferences() { document.documentElement.setAttribute('data-theme', DB.theme); if (DB.isDark) document.documentElement.classList.add('dark'); updateDarkModeButton(); }
         function setTheme(t) { DB.theme = t; localStorage.setItem('rt_theme', t); applyUIPreferences(); renderUI(); }
-        function toggleDarkMode() { DB.isDark = !DB.isDark; localStorage.setItem('rt_dark', DB.isDark); document.documentElement.classList.toggle('dark'); renderUI(); }
+        
         function unlockApp() { document.getElementById('pinLockScreen').classList.add('hidden'); document.getElementById('mainAppContent').classList.remove('hidden'); if (!DB.user) document.getElementById('onboardingModal').classList.remove('hidden'); else { document.getElementById('userNameDisplay').innerText = DB.user.name; renderUI(); } }
         function pressPin(n) { if (currentPin.length < 4) { currentPin += n; updatePinDots(); } if (currentPin.length === 4) { if (currentPin === DB.pin) unlockApp(); else { alert("Access Denied"); currentPin = ""; updatePinDots(); } } }
         function updatePinDots() { const dots = document.querySelectorAll('.pin-dot'); dots.forEach((d, i) => i < currentPin.length ? d.classList.add('filled') : d.classList.remove('filled')); }
         function clearPin() { currentPin = ""; updatePinDots(); }
         function togglePinVisibility() { pinVisible = !pinVisible; document.getElementById('pinTextPreview').classList.toggle('hidden', !pinVisible); }
-        function savePin(p) { if(p.length === 4) { DB.pin = p; localStorage.setItem('rt_pin', p); alert("PIN Locked!"); document.getElementById('pinBox').classList.add('hidden'); } }
+        function savePin(p) { if(p.length === 4) { DB.pin = p; localStorage.setItem('rt_pin', p); alert("Security PIN Updated!"); document.getElementById('pinBox').classList.add('hidden'); } }
         function saveSalaryDate(v) { DB.salaryDate = parseInt(v) || 0; localStorage.setItem('rt_salary_date', v); renderUI(); }
         function saveData() { localStorage.setItem('rt_txns', JSON.stringify(DB.txns)); }
+        
+        // --- ONBOARDING & MODALS ---
+        function completeOnboarding() {
+            const name = document.getElementById('setupName').value;
+            const target = document.getElementById('setupTarget').value;
+            if (name && target) {
+                DB.user = { name: name, target: target };
+                localStorage.setItem('rt_user', JSON.stringify(DB.user));
+                document.getElementById('onboardingModal').classList.add('hidden');
+                unlockApp();
+            } else { alert("Both fields are required!"); }
+        }
         function handleAdd(e) { e.preventDefault(); const a = Number(document.getElementById('amt').value), t = document.querySelector('input[name="type"]:checked').value, eid = document.getElementById('editId').value, entry = { id: eid ? Number(eid) : Date.now(), amount: t === 'expense' ? -a : a, desc: document.getElementById('desc').value, category: document.getElementById('cat').value, date: document.getElementById('entryDate').value || new Date().toISOString().split('T')[0] }; if(eid) DB.txns = DB.txns.map(x => x.id == eid ? entry : x); else DB.txns.push(entry); saveData(); renderUI(); closeAddModal(); }
-        function deleteTransaction(id) { if(confirm("Delete?")) { DB.txns = DB.txns.filter(t => t.id !== id); saveData(); renderUI(); } }
+        function deleteTransaction(id) { if(confirm("Permanently delete?")) { DB.txns = DB.txns.filter(t => t.id !== id); saveData(); renderUI(); } }
         function editTransaction(id) { const t = DB.txns.find(x => x.id === id); document.getElementById('modalTitle').innerText = "Edit Entry"; document.getElementById('editId').value = t.id; document.querySelector(`input[name="type"][value="${t.amount < 0 ? 'expense' : 'income'}"]`).checked = true; document.getElementById('amt').value = Math.abs(t.amount); updateCategories(); document.getElementById('cat').value = t.category; document.getElementById('entryDate').value = t.date; document.getElementById('desc').value = t.desc || ""; openAddModal(); }
         function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); updateCategories(); }
         function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('editId').value = ""; }
         function updateCategories() { const type = document.querySelector('input[name="type"]:checked').value, select = document.getElementById('cat'); select.innerHTML = ''; [...BASE_CATS[type], ...DB.customCats[type]].forEach(c => { const o = document.createElement('option'); o.value = c; o.innerText = c; select.appendChild(o); }); }
         function addNewCategory() { const t = document.querySelector('input[name="type"]:checked').value, n = prompt(`New ${t} category:`); if (n) { DB.customCats[t].push(n); localStorage.setItem('rt_custom_cats', JSON.stringify(DB.customCats)); updateCategories(); document.getElementById('cat').value = n; } }
         function updateChart(m) { currentChartMode = m; const ctx = document.getElementById('mainChart').getContext('2d'), c = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim(); let ls = [], da = []; if(m === 'daily') { for(let i=6; i>=0; i--) { const d = new Date(); d.setDate(d.getDate() - i); ls.push(d.toLocaleDateString('en-US', { weekday: 'short' })); da.push(DB.txns.filter(t => t.date === d.toISOString().split('T')[0] && t.amount < 0).reduce((a, b) => a + Math.abs(b.amount), 0)); } } else if(m === 'weekly') { ls = ['W1','W2','W3','W4']; da = [0,0,0,0]; DB.txns.forEach(t => { if(t.amount < 0 && new Date(t.date).getMonth() === new Date().getMonth()) { const w = Math.min(Math.floor((new Date(t.date).getDate()-1)/7), 3); da[w] += Math.abs(t.amount); } }); } else { for(let i=5; i>=0; i--) { const d = new Date(); d.setMonth(d.getMonth() - i); ls.push(d.toLocaleDateString('en-US', { month: 'short' })); da.push(DB.txns.filter(t => t.amount < 0 && new Date(t.date).getMonth() === d.getMonth()).reduce((a, b) => a + Math.abs(b.amount), 0)); } } if(chartInstance) chartInstance.destroy(); chartInstance = new Chart(ctx, { type: 'bar', data: { labels: ls, datasets: [{ data: da, backgroundColor: c, borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 10 } } } } } }); }
-        function updatePieChart() { const ctx = document.getElementById('pieChart').getContext('2d'), exp = DB.txns.filter(t => t.amount < 0), m = {}; exp.forEach(t => m[t.category] = (m[t.category] || 0) + Math.abs(t.amount)); const ls = Object.keys(m), da = Object.values(m); if (pieInstance) pieInstance.destroy(); pieInstance = new Chart(ctx, { type: 'doughnut', data: { labels: ls, datasets: [{ data: da, backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#eab308'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, color: DB.isDark ? '#ccc' : '#666' } } }, cutout: '70%' } }); }
-        async function fetchRates() { try { const res = await fetch('https://open.er-api.com/v6/latest/USD'); const d = await res.json(); rates = d.rates; convertCurrency(); } catch (e) { document.getElementById('liveRateText').innerText = "Offline"; } }
-        function convertCurrency() { if(!rates) return; const f = document.getElementById('convFrom').value, t = document.getElementById('convTo').value, a = document.getElementById('convAmount').value, r = (a / rates[f]) * rates[t]; document.getElementById('convResult').innerText = `${t} ${r.toFixed(2)}`; document.getElementById('liveRateText').innerText = `1 ${f} = ${(rates[t]/rates[f]).toFixed(4)} ${t}`; }
+        function updatePieChart() { const ctx = document.getElementById('pieChart').getContext('2d'), exp = DB.txns.filter(t => t.amount < 0), m = {}; exp.forEach(t => m[t.category] = (m[t.category] || 0) + Math.abs(t.amount)); const ls = Object.keys(m), da = Object.values(m); if (pieInstance) pieInstance.destroy(); pieInstance = new Chart(ctx, { type: 'doughnut', data: { labels: ls, datasets: [{ data: da, backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#eab308', '#db2777', '#65a30d'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, color: DB.isDark ? '#ccc' : '#666' } } }, cutout: '70%' } }); }
+        async function fetchRates() { try { const res = await fetch('https://open.er-api.com/v6/latest/USD'); const d = await res.json(); rates = d.rates; convertCurrency(); } catch (e) { document.getElementById('liveRateText').innerText = "Network Error"; } }
+        function convertCurrency() { if(!rates) return; const f = document.getElementById('convFrom').value, t = document.getElementById('convTo').value, a = document.getElementById('convAmount').value, r = (a / rates[f]) * rates[t]; document.getElementById('convResult').innerText = `${t} ${r.toFixed(2)}`; document.getElementById('liveRateText').innerText = `Live Market: 1 ${f} = ${(rates[t]/rates[f]).toFixed(4)} ${t}`; }
         function swapConverter() { const f = document.getElementById('convFrom'), t = document.getElementById('convTo'), v = f.value; f.value = t.value; t.value = v; convertCurrency(); }
         function setChartFilter(p) { document.querySelectorAll('.chart-btn').forEach(b => b.classList.remove('active-chart', 'bg-primary', 'text-white')); event.target.classList.add('active-chart', 'bg-primary', 'text-white'); updateChart(p); }
         function exportToCSV() { let csv = "Date,Category,Description,Amount\n"; DB.txns.forEach(t => csv += `${t.date},${t.category},${t.desc || '-'},${t.amount}\n`); const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Statement.csv'; a.click(); }
-        function handleImport(i) { const f = i.files[0]; Papa.parse(f, { header: true, skipEmptyLines: true, complete: (res) => { const im = res.data.filter(r => r.Date && r.Amount).map(r => ({ id: Date.now()+Math.random(), date: r.Date.trim(), category: r.Category||'Other', desc: r.Description||'', amount: parseFloat(r.Amount.toString().replace(/[₹,]/g, '')) || 0 })); if(confirm(`Add ${im.length} items?`)) { DB.txns = [...DB.txns, ...im]; saveData(); renderUI(); } } }); i.value = ""; }
-        function updateModalColors() { const type = document.querySelector('input[name="type"]:checked').value, amtInput = document.getElementById('amt'), btn = document.getElementById('addRecordBtn'); if (type === 'expense') { amtInput.className = "w-full text-5xl font-bold text-center bg-transparent outline-none text-red-500"; btn.className = "w-full py-5 bg-red-500 text-white rounded-3xl font-bold text-xl shadow-xl transition"; } else { amtInput.className = "w-full text-5xl font-bold text-center bg-transparent outline-none text-green-500"; btn.className = "w-full py-5 bg-green-500 text-white rounded-3xl font-bold text-xl shadow-xl transition"; } }
-        function resetTransactions() { if(confirm("Wipe all data?")) { DB.txns = []; saveData(); location.reload(); } }
+        function handleImport(i) { const f = i.files[0]; Papa.parse(f, { header: true, skipEmptyLines: true, complete: (res) => { const im = res.data.filter(r => r.Date && r.Amount).map(r => ({ id: Date.now()+Math.random(), date: r.Date.trim(), category: r.Category||'Other', desc: r.Description||'', amount: parseFloat(r.Amount.toString().replace(/[₹,]/g, '')) || 0 })); if(confirm(`Sync ${im.length} entries?`)) { DB.txns = [...DB.txns, ...im]; saveData(); renderUI(); } } }); i.value = ""; }
+        function updateModalColors() { const type = document.querySelector('input[name="type"]:checked').value, amtInput = document.getElementById('amt'), btn = document.getElementById('addRecordBtn'); if (type === 'expense') { amtInput.className = "w-full text-5xl font-bold text-center bg-transparent outline-none text-red-500"; btn.className = "w-full py-5 bg-red-500 text-white rounded-3xl font-bold text-xl shadow-xl active:scale-95 transition"; } else { amtInput.className = "w-full text-5xl font-bold text-center bg-transparent outline-none text-green-500"; btn.className = "w-full py-5 bg-green-500 text-white rounded-3xl font-bold text-xl shadow-xl active:scale-95 transition"; } }
+        function resetTransactions() { if(confirm("DANGER: This wipes all app data. Proceed?")) { DB.txns = []; saveData(); location.reload(); } }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+            .then(() => console.log("v2.1 Pro Engine Active 🚀"))
+            .catch(err => console.error("Update Error", err));
+        }
     </script>
 </body>
 </html>
