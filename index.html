@@ -50,7 +50,6 @@
         .calc-btn:active { transform: scale(0.95); }
         input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.4; cursor: pointer; }
 
-        /* CHANGED: Added mesh gradient for modern card */
         .modern-card-bg {
             background: linear-gradient(135deg, var(--primary-color) 0%, #312e81 100%);
             position: relative;
@@ -152,7 +151,12 @@
 
                     <div class="mt-2">
                         <p class="text-[11px] font-medium text-indigo-100 uppercase tracking-widest mb-1">Total Balance</p>
-                        <h2 class="text-4xl font-bold tracking-tight" id="mainBalance">₹0.00</h2>
+                        <div class="flex items-center gap-3">
+                            <h2 class="text-4xl font-bold tracking-tight" id="mainBalance">*****</h2>
+                            <button onclick="toggleBalancePrivacy()" class="text-indigo-200 hover:text-white transition focus:outline-none">
+                                <i class="fas fa-eye" id="balanceEyeIcon"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mt-auto grid grid-cols-3 gap-2 bg-black/20 backdrop-blur-md p-3 rounded-2xl border border-white/5">
@@ -306,6 +310,17 @@
                 </div>
                 
                 <input type="text" id="desc" placeholder="What was this for?" class="w-full p-5 bg-gray-50 dark:bg-gray-700 rounded-2xl outline-none text-gray-900 dark:text-white border-none shadow-inner">
+                
+                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl flex items-center justify-between">
+                    <span class="text-sm font-bold text-gray-500 dark:text-gray-300">Repeat Transaction?</span>
+                    <select id="recurrenceFreq" class="bg-transparent text-primary font-bold text-sm outline-none text-right">
+                        <option value="none">No (One-time)</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+
                 <button type="submit" id="addRecordBtn" class="w-full py-5 bg-primary text-white rounded-3xl font-bold text-xl shadow-xl active:scale-95 transition">Record Now</button>
             </form>
         </div>
@@ -315,6 +330,8 @@
         const DB = { 
             user: JSON.parse(localStorage.getItem('rt_user')) || null, 
             txns: JSON.parse(localStorage.getItem('rt_txns')) || [], 
+            // UPDATE: Added storage for recurring rules
+            recurring: JSON.parse(localStorage.getItem('rt_recurring')) || [],
             theme: localStorage.getItem('rt_theme') || 'default', 
             isDark: localStorage.getItem('rt_dark') === 'true', 
             salaryDate: parseInt(localStorage.getItem('rt_salary_date')) || 0,
@@ -325,10 +342,65 @@
         const BASE_CATS = { expense: ['🍔 Food', '🚖 Transport', '🛍️ Shopping', '🧾 Bills', '🍿 Entertainment', '🏠 Rent', '💊 Health'], income: ['💰 Salary', '📈 Investment', '🎁 Gift', '💼 Business', '↩️ Refund'] };
         let chartInstance = null, pieInstance = null, rates = null, currentPin = "", pinVisible = false, currentChartMode = 'daily';
         let calcVal = "0", calcExpr = "", calcMode = "basic", finType = "emi";
+        // UPDATE: Privacy state variable
+        let isBalanceVisible = false;
 
-        window.onload = () => { if (DB.pin) document.getElementById('pinLockScreen').classList.remove('hidden'); else unlockApp(); applyUIPreferences(); fetchRates(); buildCalc(); };
+        window.onload = () => { 
+            if (DB.pin) document.getElementById('pinLockScreen').classList.remove('hidden'); 
+            else unlockApp(); 
+            applyUIPreferences(); 
+            fetchRates(); 
+            buildCalc();
+            // UPDATE: Check for auto-capture of recurring transactions
+            checkRecurringTransactions();
+        };
 
         // --- DASHBOARD CORE ---
+        // UPDATE: Toggle Balance Function
+        function toggleBalancePrivacy() {
+            isBalanceVisible = !isBalanceVisible;
+            const eye = document.getElementById('balanceEyeIcon');
+            eye.className = isBalanceVisible ? "fas fa-eye-slash" : "fas fa-eye";
+            renderUI();
+        }
+
+        // UPDATE: Recurring Logic
+        function checkRecurringTransactions() {
+            let madeChanges = false;
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            DB.recurring.forEach(rule => {
+                let nextDate = new Date(rule.nextDate);
+                // While the next due date is in the past or today
+                while (nextDate <= today) {
+                    // Create the auto-transaction
+                    const newTxn = {
+                        id: Date.now() + Math.random(),
+                        amount: rule.amount,
+                        desc: rule.desc + " (Auto)",
+                        category: rule.category,
+                        date: nextDate.toISOString().split('T')[0]
+                    };
+                    DB.txns.push(newTxn);
+
+                    // Calculate next occurrence
+                    if (rule.freq === 'daily') nextDate.setDate(nextDate.getDate() + 1);
+                    else if (rule.freq === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
+                    else if (rule.freq === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+
+                    rule.nextDate = nextDate.toISOString().split('T')[0];
+                    madeChanges = true;
+                }
+            });
+
+            if (madeChanges) {
+                localStorage.setItem('rt_recurring', JSON.stringify(DB.recurring));
+                saveData();
+                renderUI();
+            }
+        }
+
         function updateDailyLimit(v) { DB.dailyLimit = parseFloat(v) || 0; localStorage.setItem('rt_daily_limit', v); renderUI(); }
         function editGoal() { const n = prompt("Target Goal (₹):", DB.user.target); if (n !== null && !isNaN(n)) { DB.user.target = n; localStorage.setItem('rt_user', JSON.stringify(DB.user)); renderUI(); } }
         function getDaysLeft() { 
@@ -346,7 +418,10 @@
             const total = DB.txns.reduce((a, t) => a + t.amount, 0); 
             const totalExp = DB.txns.filter(t => t.amount < 0).reduce((a, t) => a + Math.abs(t.amount), 0);
             const spentToday = Math.abs(DB.txns.filter(t => t.date === today && t.amount < 0).reduce((a, t) => a + t.amount, 0));
-            document.getElementById('mainBalance').innerText = `₹${total.toLocaleString('en-IN')}`;
+            
+            // UPDATE: Masked Balance Logic
+            document.getElementById('mainBalance').innerText = isBalanceVisible ? `₹${total.toLocaleString('en-IN')}` : '*****';
+            
             document.getElementById('sumOfExpensesBalance').innerText = `₹${totalExp.toLocaleString('en-IN')}`;
             document.getElementById('spentTodayDisplay').innerText = `₹${spentToday.toLocaleString('en-IN')}`;
             const rem = Math.max(0, DB.dailyLimit - spentToday);
@@ -359,11 +434,7 @@
             document.getElementById('countdownInCard').innerText = `${dLeft} Days`;
             document.getElementById('targetDisplay').innerText = `₹${target}`;
             
-            // CHANGED: LOGIC CHECK - SAFE SPEND
-            // Logic: Total Money Available - Savings Goal = Spendable Money.
-            // Spendable Money / Days Remaining = Daily Safe Spend.
-            // This ensures you hit your savings goal by payday.
-            const daysDivisor = dLeft || 1; // Prevent division by zero if it's the last day
+            const daysDivisor = dLeft || 1; 
             const safeDaily = Math.max(0, Math.floor(surplus / daysDivisor));
             document.getElementById('safeSpendAmount').innerText = `₹${safeDaily.toLocaleString('en-IN')}`;
             
@@ -375,7 +446,7 @@
             updateChart(currentChartMode); updatePieChart();
         }
 
-        // --- CALCULATOR (LIVE PREVIEW FIXED) ---
+        // --- CALCULATOR ---
         function setCalcMode(m) { 
             calcMode = m; document.querySelectorAll('.calc-mode-btn').forEach(b => b.classList.remove('bg-primary', 'text-white')); event.target.classList.add('bg-primary', 'text-white');
             document.getElementById('mathCalc').classList.toggle('view-hidden', m === 'fin'); document.getElementById('finCalc').classList.toggle('view-hidden', m !== 'fin'); buildCalc();
@@ -395,7 +466,6 @@
                 if(['sin','cos','tan','log'].includes(k)) calcExpr += `Math.${k}(`; else calcExpr += k; 
             }
             x.innerText = calcExpr || "0";
-            // LIVE PREVIEW LOGIC
             try { 
                 const preview = eval(calcExpr.replace('π', Math.PI).replace('^', '**').replace('√', 'Math.sqrt'));
                 d.innerText = isNaN(preview) ? "0" : preview;
@@ -442,11 +512,48 @@
                 unlockApp();
             } else { alert("Both fields are required!"); }
         }
-        function handleAdd(e) { e.preventDefault(); const a = Number(document.getElementById('amt').value), t = document.querySelector('input[name="type"]:checked').value, eid = document.getElementById('editId').value, entry = { id: eid ? Number(eid) : Date.now(), amount: t === 'expense' ? -a : a, desc: document.getElementById('desc').value, category: document.getElementById('cat').value, date: document.getElementById('entryDate').value || new Date().toISOString().split('T')[0] }; if(eid) DB.txns = DB.txns.map(x => x.id == eid ? entry : x); else DB.txns.push(entry); saveData(); renderUI(); closeAddModal(); }
+        function handleAdd(e) { 
+            e.preventDefault(); 
+            const a = Number(document.getElementById('amt').value);
+            const t = document.querySelector('input[name="type"]:checked').value;
+            const eid = document.getElementById('editId').value;
+            const cat = document.getElementById('cat').value;
+            const dateVal = document.getElementById('entryDate').value || new Date().toISOString().split('T')[0];
+            const desc = document.getElementById('desc').value;
+            const freq = document.getElementById('recurrenceFreq').value;
+
+            const entry = { id: eid ? Number(eid) : Date.now(), amount: t === 'expense' ? -a : a, desc: desc, category: cat, date: dateVal }; 
+            
+            if(eid) {
+                DB.txns = DB.txns.map(x => x.id == eid ? entry : x); 
+            } else {
+                DB.txns.push(entry);
+                // UPDATE: Save recurring rule if frequency is not none
+                if (freq !== 'none') {
+                    let nextDate = new Date(dateVal);
+                    if (freq === 'daily') nextDate.setDate(nextDate.getDate() + 1);
+                    else if (freq === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
+                    else if (freq === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+
+                    DB.recurring.push({
+                        id: Date.now() + 1,
+                        amount: entry.amount,
+                        category: cat,
+                        desc: desc,
+                        freq: freq,
+                        nextDate: nextDate.toISOString().split('T')[0]
+                    });
+                    localStorage.setItem('rt_recurring', JSON.stringify(DB.recurring));
+                }
+            }
+            saveData(); 
+            renderUI(); 
+            closeAddModal(); 
+        }
         function deleteTransaction(id) { if(confirm("Permanently delete?")) { DB.txns = DB.txns.filter(t => t.id !== id); saveData(); renderUI(); } }
         function editTransaction(id) { const t = DB.txns.find(x => x.id === id); document.getElementById('modalTitle').innerText = "Edit Entry"; document.getElementById('editId').value = t.id; document.querySelector(`input[name="type"][value="${t.amount < 0 ? 'expense' : 'income'}"]`).checked = true; document.getElementById('amt').value = Math.abs(t.amount); updateCategories(); document.getElementById('cat').value = t.category; document.getElementById('entryDate').value = t.date; document.getElementById('desc').value = t.desc || ""; openAddModal(); }
         function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); updateCategories(); }
-        function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('editId').value = ""; }
+        function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('editId').value = ""; document.getElementById('recurrenceFreq').value = 'none'; }
         function updateCategories() { const type = document.querySelector('input[name="type"]:checked').value, select = document.getElementById('cat'); select.innerHTML = ''; [...BASE_CATS[type], ...DB.customCats[type]].forEach(c => { const o = document.createElement('option'); o.value = c; o.innerText = c; select.appendChild(o); }); }
         function addNewCategory() { const t = document.querySelector('input[name="type"]:checked').value, n = prompt(`New ${t} category:`); if (n) { DB.customCats[t].push(n); localStorage.setItem('rt_custom_cats', JSON.stringify(DB.customCats)); updateCategories(); document.getElementById('cat').value = n; } }
         function updateChart(m) { currentChartMode = m; const ctx = document.getElementById('mainChart').getContext('2d'), c = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim(); let ls = [], da = []; if(m === 'daily') { for(let i=6; i>=0; i--) { const d = new Date(); d.setDate(d.getDate() - i); ls.push(d.toLocaleDateString('en-US', { weekday: 'short' })); da.push(DB.txns.filter(t => t.date === d.toISOString().split('T')[0] && t.amount < 0).reduce((a, b) => a + Math.abs(b.amount), 0)); } } else if(m === 'weekly') { ls = ['W1','W2','W3','W4']; da = [0,0,0,0]; DB.txns.forEach(t => { if(t.amount < 0 && new Date(t.date).getMonth() === new Date().getMonth()) { const w = Math.min(Math.floor((new Date(t.date).getDate()-1)/7), 3); da[w] += Math.abs(t.amount); } }); } else { for(let i=5; i>=0; i--) { const d = new Date(); d.setMonth(d.getMonth() - i); ls.push(d.toLocaleDateString('en-US', { month: 'short' })); da.push(DB.txns.filter(t => t.amount < 0 && new Date(t.date).getMonth() === d.getMonth()).reduce((a, b) => a + Math.abs(b.amount), 0)); } } if(chartInstance) chartInstance.destroy(); chartInstance = new Chart(ctx, { type: 'bar', data: { labels: ls, datasets: [{ data: da, backgroundColor: c, borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 10 } } } } } }); }
